@@ -518,6 +518,19 @@ $ soroprobe check --standard sep41 C…
 The same standard is available as `standard` in `--file` entries and as the
 `standard` query parameter of `GET /v1/check/{contract}`.
 
+#### Admin posture: `--admin-fn` and `--admin-key`
+
+Many contracts are controlled by one admin address, and what that address *is*
+is the most important fact about the contract's trust model. `--admin-fn admin`
+calls a zero-argument function that returns the admin; `--admin-key sym:Admin`
+reads it from instance storage (or, failing that, a persistent data entry)
+instead. The check named `admin` then reports:
+
+- for an **account**: its master weight, thresholds and signers. A single signer
+  with master weight is a `WARN`, prefixed `MAINNET:` on the public network;
+- for a **contract**: that it is a contract, and its Wasm hash;
+- an admin that cannot be resolved is a `FAIL`.
+
 ### `soroprobe compat <old> <new>`
 
 Compares two versions of a contract's interface and fails on a breaking change,

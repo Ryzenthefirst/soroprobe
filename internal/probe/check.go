@@ -37,6 +37,11 @@ type CheckRequest struct {
 	// Standard, when set, names a published interface (see abi.Standards)
 	// the contract's exported functions are verified against.
 	Standard string `json:"standard,omitempty" yaml:"standard,omitempty"`
+	// AdminFn names a zero-argument function that returns the admin address,
+	// and AdminKey a storage key ("sym:Admin") that holds it. Either makes
+	// the check report the admin's security posture. Give one, not both.
+	AdminFn  string `json:"admin_fn,omitempty" yaml:"admin_fn,omitempty"`
+	AdminKey string `json:"admin_key,omitempty" yaml:"admin_key,omitempty"`
 }
 
 // CheckOutcome is the result of one individual check.
@@ -114,6 +119,7 @@ func (p *Prober) checkSteps() []CheckStep {
 		&simulateStep{},
 		&expectStep{p: p},
 		&standardStep{p: p},
+		&adminStep{p: p},
 	}
 }
 
@@ -138,11 +144,15 @@ func (s *expectStep) Run(_ context.Context, req CheckRequest, _ *InspectResult, 
 // inspect report and the simulation once and hands both to every step, so
 // adding a step cannot accidentally add an RPC call.
 func (p *Prober) Check(ctx context.Context, req CheckRequest) (*CheckResult, error) {
-	inspect, err := p.Inspect(ctx, InspectRequest{
+	if req.AdminFn != "" && req.AdminKey != "" {
+		return nil, errors.New("give an admin function or an admin key, not both")
+	}
+	inspectReq := InspectRequest{
 		ContractID:     req.ContractID,
 		DataKeys:       req.DataKeys,
 		DataDurability: req.DataDurability,
-	})
+	}
+	inspect, err := p.Inspect(ctx, inspectReq)
 	if err != nil {
 		return nil, err
 	}

@@ -94,6 +94,10 @@ type InspectResult struct {
 	// kept so the asset can be decoded without reading the instance again.
 	sacStorage *xdr.ScMap
 
+	// instanceStorage is the raw instance storage of any contract, kept so
+	// a check can look a key up without reading the instance again.
+	instanceStorage *xdr.ScMap
+
 	// InstanceStorage is the decoded instance storage map. These values live
 	// and die with the instance entry: they share its single TTL.
 	InstanceStorage any `json:"instance_storage,omitempty"`
@@ -373,6 +377,7 @@ func (p *Prober) readInstanceEntry(entry protocol.LedgerEntryResult, result *Ins
 		result.Executable = instance.Executable.Type.String()
 	}
 
+	result.instanceStorage = instance.Storage
 	if instance.Storage != nil {
 		storage, err := p.decodeStorage(instance.Storage)
 		if err != nil {

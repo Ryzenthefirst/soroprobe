@@ -407,3 +407,19 @@ func (f *Fake) store(t testing.TB, key xdr.LedgerKey, data xdr.LedgerEntryData, 
 	defer f.mu.Unlock()
 	f.Entries[keyXDR] = protocol.LedgerEntryResult{KeyXDR: keyXDR, DataXDR: dataXDR, LiveUntilLedgerSeq: &liveUntil}
 }
+
+// StoreEntry stores an arbitrary ledger entry, live for a long time, so a
+// test can stage state the recorded fixtures do not contain.
+func (f *Fake) StoreEntry(t testing.TB, key xdr.LedgerKey, data xdr.LedgerEntryData) {
+	t.Helper()
+	f.store(t, key, data, f.LatestLedger+1_000_000)
+}
+
+// StoreAccount stores an account entry, so tests can drive balance, signer
+// and threshold checks.
+func (f *Fake) StoreAccount(t testing.TB, acc xdr.AccountEntry) {
+	t.Helper()
+	f.StoreEntry(t,
+		xdr.LedgerKey{Type: xdr.LedgerEntryTypeAccount, Account: &xdr.LedgerKeyAccount{AccountId: acc.AccountId}},
+		xdr.LedgerEntryData{Type: xdr.LedgerEntryTypeAccount, Account: &acc})
+}
