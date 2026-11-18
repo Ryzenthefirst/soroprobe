@@ -42,6 +42,10 @@ type CheckRequest struct {
 	// the check report the admin's security posture. Give one, not both.
 	AdminFn  string `json:"admin_fn,omitempty" yaml:"admin_fn,omitempty"`
 	AdminKey string `json:"admin_key,omitempty" yaml:"admin_key,omitempty"`
+	// Upgradeability adds a best-effort report on whether the contract can
+	// be changed: upgrade-like functions, their admin and the code entry's
+	// last-modified ledger.
+	Upgradeability bool `json:"upgradeability,omitempty" yaml:"upgradeability,omitempty"`
 }
 
 // CheckOutcome is the result of one individual check.
@@ -120,6 +124,7 @@ func (p *Prober) checkSteps() []CheckStep {
 		&expectStep{p: p},
 		&standardStep{p: p},
 		&adminStep{p: p},
+		&upgradeabilityStep{p: p},
 	}
 }
 

@@ -531,6 +531,22 @@ instead. The check named `admin` then reports:
 - for a **contract**: that it is a contract, and its Wasm hash;
 - an admin that cannot be resolved is a `FAIL`.
 
+#### Upgradeability: `--upgradeability`
+
+`check --upgradeability` answers "can this contract be changed under me?" in
+three checks, all **best effort**: the interface is searched for upgrade-like
+functions by name (`upgrade`, `update_current_contract_wasm`, `set_wasm`, anything
+containing `upgrade`), so a differently named upgrade function is not seen.
+
+- `upgradeability:interface` warns when such a function is exported.
+- `upgradeability:admin` names the admin that would have to call it: the one from
+  `--admin-fn`/`--admin-key`, else instance storage `Admin` or a zero-argument
+  `admin`, `get_admin` or `owner` function. It warns when an upgrade function is
+  exposed and no admin can be found.
+- `upgradeability:code_modified` gives the ledger the code entry was last written.
+
+Stellar Asset Contracts are host-implemented and skipped.
+
 ### `soroprobe compat <old> <new>`
 
 Compares two versions of a contract's interface and fails on a breaking change,

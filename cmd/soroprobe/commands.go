@@ -376,6 +376,7 @@ func newCheckCmd(opts *options) *cobra.Command {
 	var quiet bool
 	var standard string
 	var adminFn, adminKey string
+	var upgradeability bool
 
 	cmd := &cobra.Command{
 		Use:   "check <contract-id> | check --file <checks.json>",
@@ -410,6 +411,10 @@ carry their own "standard".
 posture is then reported: for an account its signers and thresholds, warning
 on a single key with master weight (marked MAINNET on the public network); for
 a contract, that it is a contract and its Wasm hash.
+
+--upgradeability reports, on a best-effort basis, whether the contract can be
+changed: upgrade-like functions in its interface (matched by name), the admin
+that would have to call them, and the ledger its code entry was last modified.
 
 --file runs many checks at once, from a JSON file ("-" for stdin):
 
@@ -465,8 +470,8 @@ instead of hiding in the log. --json and --quiet suppress them.`,
 			if adminFn != "" && adminKey != "" {
 				return fmt.Errorf("give --admin-fn or --admin-key, not both")
 			}
-			if file != "" && (adminFn != "" || adminKey != "") {
-				return fmt.Errorf("--admin-fn and --admin-key apply to a single contract, not --file")
+			if file != "" && (adminFn != "" || adminKey != "" || upgradeability) {
+				return fmt.Errorf("--admin-fn, --admin-key and --upgradeability apply to a single contract, not --file")
 			}
 			outputFormat, err := selectOutputFormat(cmd, opts, format)
 			if err != nil {
@@ -509,6 +514,7 @@ instead of hiding in the log. --json and --quiet suppress them.`,
 				Standard:       standard,
 				AdminFn:        adminFn,
 				AdminKey:       adminKey,
+				Upgradeability: upgradeability,
 			})
 			if err != nil {
 				return err
@@ -537,6 +543,7 @@ instead of hiding in the log. --json and --quiet suppress them.`,
 		fmt.Sprintf("verify the contract's interface against a standard (%s)", strings.Join(abi.StandardNames(), ", ")))
 	cmd.Flags().StringVar(&adminFn, "admin-fn", "", "zero-argument function returning the admin address; reports the admin's security posture")
 	cmd.Flags().StringVar(&adminKey, "admin-key", "", `storage key holding the admin address, as type:value (e.g. "sym:Admin")`)
+	cmd.Flags().BoolVar(&upgradeability, "upgradeability", false, "report whether the contract can be upgraded (best effort)")
 	cmd.Flags().StringVar(&expect, "expect", "", "expected return value specification for --fn, in type:value form")
 	cmd.Flags().StringArrayVar(&dataKeys, "key", nil, "a contract data key to include in the TTL check (repeatable)")
 	cmd.Flags().StringVar(&keyFile, "key-file", "", "a file listing data keys for the TTL check, one spec per line (blank lines and # comments ignored)")

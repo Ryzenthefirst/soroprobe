@@ -17,8 +17,17 @@ func TestCheckAdminKeyReportsPosture(t *testing.T) {
 	assert.Contains(t, out, "instance storage sym:admin")
 }
 
+func TestCheckUpgradeabilityIsLabelledBestEffort(t *testing.T) {
+	out, err := runWithFake(t, stellartest.NewFake(t), "check", "--upgradeability", stellartest.WasmContract)
+	require.NoError(t, err, out)
+	assert.Contains(t, out, "upgradeability:interface")
+	assert.Contains(t, out, "best effort")
+}
+
 func TestCheckPostureFlagsConflicts(t *testing.T) {
 	fake := stellartest.NewFake(t)
 	_, err := runWithFake(t, fake, "check", "--admin-fn", "admin", "--admin-key", "sym:Admin", stellartest.WasmContract)
+	require.Error(t, err)
+	_, err = runWithFake(t, fake, "check", "--upgradeability", "--file", "x.json")
 	require.Error(t, err)
 }
