@@ -548,6 +548,27 @@ without changing its shape is not breaking, and struct fields are compared by
 name rather than position. Exit code 1 when anything is breaking; `--json`
 prints `{"old", "new", "breaking", "changes": [{"breaking", "subject", "detail"}]}`.
 
+### `soroprobe balance <token> <address>...`
+
+Reads a token's balances, formatted with the token's decimals and symbol, instead
+of simulating `balance` by hand and dividing by 10^decimals. `<token>` is a
+SEP-41 token or a Stellar Asset Contract; each address is an account (`G...`) or
+a contract (`C...`). `--file holders.txt` adds more addresses, one per line
+(`-` for stdin; blank lines and `#` comments are ignored).
+
+```
+$ soroprobe balance C…TOKEN G…ALICE G…BOB
+token C…TOKEN  USDC, 7 decimals
+
+  G…ALICE 12.5 USDC
+  G…BOB 0 USDC
+```
+
+`--json` prints `{"token", "symbol", "decimals", "balances": [{"address", "raw",
+"balance"}]}`; `raw` is the integer the contract returned, as a string. An
+address that cannot be read is reported with an `error` and the others still
+print; the exit code is then 1. Nothing is submitted and no key is needed.
+
 ### `soroprobe verify <contract-id>`
 
 Rebuilds a contract from source and checks that the Wasm it produces is the Wasm
