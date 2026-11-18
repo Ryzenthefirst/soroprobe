@@ -375,8 +375,9 @@ func newCheckCmd(opts *options) *cobra.Command {
 	var format string
 	var quiet bool
 	var standard string
-	var adminFn, adminKey string
+	var adminFn, adminKey, rentPayer string
 	var upgradeability bool
+	var extendLedgers uint32
 
 	cmd := &cobra.Command{
 		Use:   "check <contract-id> | check --file <checks.json>",
@@ -415,6 +416,12 @@ a contract, that it is a contract and its Wasm hash.
 --upgradeability reports, on a best-effort basis, whether the contract can be
 changed: upgrade-like functions in its interface (matched by name), the admin
 that would have to call them, and the ledger its code entry was last modified.
+
+--rent-payer names the account that pays to extend entries. The check prices
+extending every entry that is running low by --extend-ledgers (default 518400,
+about 30 days) and compares it with the payer's spendable balance after
+reserves, warning when it is thin and failing when it falls short. The
+calculation is printed. These three apply to the single-contract form.
 
 --file runs many checks at once, from a JSON file ("-" for stdin):
 
@@ -470,8 +477,8 @@ instead of hiding in the log. --json and --quiet suppress them.`,
 			if adminFn != "" && adminKey != "" {
 				return fmt.Errorf("give --admin-fn or --admin-key, not both")
 			}
-			if file != "" && (adminFn != "" || adminKey != "" || upgradeability) {
-				return fmt.Errorf("--admin-fn, --admin-key and --upgradeability apply to a single contract, not --file")
+			if file != "" && (adminFn != "" || adminKey != "" || upgradeability || rentPayer != "") {
+				return fmt.Errorf("--admin-fn, --admin-key, --upgradeability and --rent-payer apply to a single contract, not --file")
 			}
 			outputFormat, err := selectOutputFormat(cmd, opts, format)
 			if err != nil {
@@ -515,6 +522,8 @@ instead of hiding in the log. --json and --quiet suppress them.`,
 				AdminFn:        adminFn,
 				AdminKey:       adminKey,
 				Upgradeability: upgradeability,
+				RentPayer:      rentPayer,
+				ExtendLedgers:  extendLedgers,
 			})
 			if err != nil {
 				return err
@@ -544,6 +553,8 @@ instead of hiding in the log. --json and --quiet suppress them.`,
 	cmd.Flags().StringVar(&adminFn, "admin-fn", "", "zero-argument function returning the admin address; reports the admin's security posture")
 	cmd.Flags().StringVar(&adminKey, "admin-key", "", `storage key holding the admin address, as type:value (e.g. "sym:Admin")`)
 	cmd.Flags().BoolVar(&upgradeability, "upgradeability", false, "report whether the contract can be upgraded (best effort)")
+	cmd.Flags().StringVar(&rentPayer, "rent-payer", "", "account that pays rent; checks it can afford to extend the entries running low")
+	cmd.Flags().Uint32Var(&extendLedgers, "extend-ledgers", 0, fmt.Sprintf("ledgers to price the --rent-payer extension for (default %d)", probe.DefaultExtendLedgers))
 	cmd.Flags().StringVar(&expect, "expect", "", "expected return value specification for --fn, in type:value form")
 	cmd.Flags().StringArrayVar(&dataKeys, "key", nil, "a contract data key to include in the TTL check (repeatable)")
 	cmd.Flags().StringVar(&keyFile, "key-file", "", "a file listing data keys for the TTL check, one spec per line (blank lines and # comments ignored)")

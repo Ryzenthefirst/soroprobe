@@ -547,6 +547,22 @@ containing `upgrade`), so a differently named upgrade function is not seen.
 
 Stellar Asset Contracts are host-implemented and skipped.
 
+#### Can the rent payer afford it: `--rent-payer`
+
+A TTL warning is only actionable if someone can pay to extend the entry.
+`check --rent-payer G… [--extend-ledgers N]` prices extending every entry that is
+running low (warning or critical) by `N` ledgers (default 518400, about 30 days)
+with the same simulation `inspect --estimate-extend` uses, and compares the total
+with the payer's **spendable** balance: its balance minus the minimum balance
+(`2 + subentries + sponsoring - sponsored` base reserves of 0.5 XLM) and selling
+liabilities. It is a `FAIL` when the balance falls short and a `WARN` when it
+would cover the cost with less than twice to spare. The sum is printed so it can
+be checked. Expired entries need a restore first and are not priced.
+
+```
+  WARN  rent_payer  affords the extension with less than twice the cost to spare: extending by 518400 ledgers costs about 0.0213 XLM (instance 0.0213 XLM); payer G… has 1.5213 XLM, minus 1 XLM reserve (2 base reserves of 0.5 XLM) and selling liabilities, leaving 0.5213 XLM spendable
+```
+
 ### `soroprobe compat <old> <new>`
 
 Compares two versions of a contract's interface and fails on a breaking change,

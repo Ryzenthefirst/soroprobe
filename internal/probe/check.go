@@ -46,6 +46,13 @@ type CheckRequest struct {
 	// be changed: upgrade-like functions, their admin and the code entry's
 	// last-modified ledger.
 	Upgradeability bool `json:"upgradeability,omitempty" yaml:"upgradeability,omitempty"`
+	// RentPayer is the account ("G...") that pays to extend entries. The
+	// check compares its spendable balance with the cost of extending every
+	// entry that is running low by ExtendLedgers.
+	RentPayer string `json:"rent_payer,omitempty" yaml:"rent_payer,omitempty"`
+	// ExtendLedgers is how far to price the extension. Defaults to
+	// DefaultExtendLedgers.
+	ExtendLedgers uint32 `json:"extend_ledgers,omitempty" yaml:"extend_ledgers,omitempty"`
 }
 
 // CheckOutcome is the result of one individual check.
@@ -125,6 +132,7 @@ func (p *Prober) checkSteps() []CheckStep {
 		&standardStep{p: p},
 		&adminStep{p: p},
 		&upgradeabilityStep{p: p},
+		&rentPayerStep{p: p},
 	}
 }
 
@@ -152,10 +160,18 @@ func (p *Prober) Check(ctx context.Context, req CheckRequest) (*CheckResult, err
 	if req.AdminFn != "" && req.AdminKey != "" {
 		return nil, errors.New("give an admin function or an admin key, not both")
 	}
+	if req.RentPayer != "" && req.ExtendLedgers == 0 {
+		req.ExtendLedgers = DefaultExtendLedgers
+	}
 	inspectReq := InspectRequest{
 		ContractID:     req.ContractID,
 		DataKeys:       req.DataKeys,
 		DataDurability: req.DataDurability,
+	}
+	// Pricing the extensions is the expensive part of an inspect, so it is
+	// asked for only when a rent payer is named.
+	if req.RentPayer != "" {
+		inspectReq.EstimateExtend = req.ExtendLedgers
 	}
 	inspect, err := p.Inspect(ctx, inspectReq)
 	if err != nil {
